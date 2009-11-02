@@ -2,11 +2,11 @@
 $: << "../lib"
 
 require 'sbiclient'
-require 'constants'
+require 'common'
 
 # ログイン
 c = SBIClient::Client.new
-c.fx_session( USER, PASS ) {|session|
+c.fx_session( USER, PASS, ORDER_PASS ) {|session|
   
   # レート一覧を取得
   rates = session.list_rates
