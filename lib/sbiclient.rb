@@ -90,7 +90,7 @@ module SBIClient
       end
     end
     def self.error( page )
-        msgs = page.body.scan( /<[fF][oO][nN][tT] [cC][oO][lL][oO][rR]="#FF0000">([^<]*)</ ).flatten
+        msgs = page.body.scan( /<[fF][oO][nN][tT]\s+[cC][oO][lL][oO][rR]="?#FF0000"?>([^<]*)</ ).flatten
         error = !msgs.empty? ? msgs.map{|m| m.strip}.join(",") : page.body
         raise "operation failed.detail=#{error}".toutf8 
     end
@@ -176,8 +176,8 @@ module SBIClient
     EXPIRATION_TYPE_TODAY = :EXPIRATION_TYPE_TODAY
     # 有効期限: 週末まで
     EXPIRATION_TYPE_WEEK_END = :EXPIRATION_TYPE_WEEK_END
-    # 有効期限: 無期限
-    EXPIRATION_TYPE_INFINITY = :EXPIRATION_TYPE_INFINITY
+#    # 有効期限: 無期限
+#    EXPIRATION_TYPE_INFINITY = :EXPIRATION_TYPE_INFINITY
     # 有効期限: 日付指定
     EXPIRATION_TYPE_SPECIFIED = :EXPIRATION_TYPE_SPECIFIED
     
@@ -245,13 +245,14 @@ module SBIClient
       def list_orders(  )
         result =  link_click( "4" ) 
         
+        #puts result.body.toutf8
         list = result.body.toutf8.scan( /<A href="[^"]*&meigaraId=([a-zA-Z0-9\/]*)[^"]*">[^<]*<\/A>\s*<BR>\s*受付時間:<BR>\s*([^<]*)<BR>\s*注文パターン:([^<]+)<BR>\s*([^<]+)<BR>\s*注文番号:(\d+)<BR>\s*注文価格:([^<]+)<BR>\s*約定価格:([^<]*)<BR>\s*数量\(未約定\):<BR>\s*(\d+)\(\d+\)単位<BR>\s*発注状況:([^<]*)<BR>/)
         tmp = {}
         list.each {|i|
           pair = to_pair( i[0] )
           order_type = to_order_type_code(i[2])
           trade_type = i[3] =~ /^新規.*/ ? SBIClient::FX::TRADE_TYPE_NEW : SBIClient::FX::TRADE_TYPE_SETTLEMENT
-          sell_or_buy = i[3] == /.*売\/.*/ ?  SBIClient::FX::SELL : SBIClient::FX::BUY 
+          sell_or_buy = i[3] =~ /.*売\/.*/ ?  SBIClient::FX::SELL : SBIClient::FX::BUY 
           execution_expression = if i[3] =~ /.*\/指値/
             SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER
           elsif i[3] =~ /.*\/逆指値/
@@ -332,9 +333,8 @@ module SBIClient
           raise "options[:execution_expression] is required." unless options[:execution_expression]
           raise "options[:expiration_type] is required." unless options[:expiration_type]
         elsif ( options && options[:rate] != nil )
-          if ( options[:second_order_rate] != nil )
+          if ( options[:second_order_rate] != nil && options[:second_order_sell_or_buy] != nil  )
             # 逆指値レートが指定されていればOCO取引
-            raise "options[:second_order_sell_or_buy] is required." unless options[:second_order_sell_or_buy]
             raise "options[:execution_expression] is required." unless options[:execution_expression]
             type = ORDER_TYPE_OCO
           elsif ( options[:trail_range] != nil )
@@ -376,19 +376,20 @@ module SBIClient
           when ORDER_TYPE_OCO
             # OCO
             form.order = "3"
-            result = @client.submit(form.buttons.find {|b| b.value="選択" }) 
+            result = @client.submit(form, form.buttons.find {|b| b.value=="選択" } ) 
             form = result.forms.first
             set_expression( form, options[:execution_expression] ) 
             set_rate(form, options[:rate])
-            form.urikai2 = ( option[:second_order_sell_or_buy] == SBIClient::FX::BUY ? "1" : "-1" )
-            result = @client.submit(form.buttons.find {|b| b.value="次へ" }) 
+            form["urikai2"] = ( options[:second_order_sell_or_buy] == SBIClient::FX::BUY ? "1" : "-1" )
+            result = @client.submit(form, form.buttons.find {|b| b.value=="次へ" }) 
             form = result.forms.first
+            SBIClient::Client.error( result ) unless result.body.toutf8 =~ /maisuu/
             set_rate(form, options[:second_order_rate], "2")
             set_expiration( form,  options ) # 有効期限
           when ORDER_TYPE_IFD
             # IFD
             form.order = "2"
-            result = @client.submit(form.buttons.find {|b| b.value="選択" }) 
+            result = @client.submit(form, form.buttons.find {|b| b.value=="選択" }) 
             form = result.forms.first
             set_expression( form, options[:execution_expression] ) 
             set_rate(form, options[:rate], "3")
@@ -415,7 +416,7 @@ module SBIClient
         form["postTorihikiPs"] = @order_password
                 
         # 確認画面へ
-        result = @client.submit( form, form.buttons.find {|b| b.value="注文確認" } ) 
+        result = @client.submit( form, form.buttons.find {|b| b.value=="注文確認" } ) 
         SBIClient::Client.error( result ) unless result.body.toutf8 =~ /注文確認/
 
         result = @client.submit(result.forms.first)
@@ -454,7 +455,7 @@ module SBIClient
         SBIClient::Client.error( result ) unless result.body.toutf8 =~ /注文確認/
         form = result.forms.first
         form.ToriPs = @order_password
-        result = @client.submit(form, form.buttons.first)
+        result = @client.submit(form, form.buttons.find {|b| b.value=="注文取消" })
         SBIClient::Client.error( result ) unless result.body.toutf8 =~ /取消を受付致しました/
       end
       
@@ -488,7 +489,9 @@ module SBIClient
             SBIClient::FX::ORDER_TYPE_MARKET_ORDER
           when "通常"
             SBIClient::FX::ORDER_TYPE_NORMAL
-          when "OCO"
+          when "OCO1"
+            SBIClient::FX::ORDER_TYPE_OCO
+          when "OCO2"
             SBIClient::FX::ORDER_TYPE_OCO
           when "IFD"
             SBIClient::FX::ORDER_TYPE_IFD

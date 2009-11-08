@@ -23,7 +23,7 @@ c.fx_session( USER, PASS, ORDER_PASS ) {|session|
     })
     print_order( session )
   ensure
-    session.cancel_order(order_id.order_no)
+    session.cancel_order(order_id.order_no) if order_id
   end
     
   begin
@@ -34,7 +34,7 @@ c.fx_session( USER, PASS, ORDER_PASS ) {|session|
     })
     print_order( session )
   ensure
-    session.cancel_order(order_id.order_no)
+    session.cancel_order(order_id.order_no) if order_id
   end
     
   
@@ -43,11 +43,11 @@ c.fx_session( USER, PASS, ORDER_PASS ) {|session|
     order_id = session.order( SBIClient::FX::EURJPY, SBIClient::FX::BUY, 1, {
       :rate=>rates[SBIClient::FX::EURJPY].ask_rate + 0.5, # 逆指値レート
       :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER, # 執行条件: 逆指値 
-      :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_INFINITY  # 有効期限: 無限
+      :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY  # 有効期限: 無限
     }) 
     print_order( session )
   ensure
-    session.cancel_order(order_id.order_no)
+    session.cancel_order(order_id.order_no) if order_id
   end
     
   begin
@@ -59,6 +59,6 @@ c.fx_session( USER, PASS, ORDER_PASS ) {|session|
     })
     print_order( session )
   ensure
-    session.cancel_order(order_id.order_no)
+    session.cancel_order(order_id.order_no) if order_id
   end
 }
