@@ -176,8 +176,6 @@ module SBIClient
     EXPIRATION_TYPE_TODAY = :EXPIRATION_TYPE_TODAY
     # 有効期限: 週末まで
     EXPIRATION_TYPE_WEEK_END = :EXPIRATION_TYPE_WEEK_END
-#    # 有効期限: 無期限
-#    EXPIRATION_TYPE_INFINITY = :EXPIRATION_TYPE_INFINITY
     # 有効期限: 日付指定
     EXPIRATION_TYPE_SPECIFIED = :EXPIRATION_TYPE_SPECIFIED
     
@@ -245,6 +243,7 @@ module SBIClient
       def list_orders(  )
         result =  link_click( "4" ) 
         
+        # TODO 2ページ目以降を参照してない・・・
         #puts result.body.toutf8
         list = result.body.toutf8.scan( /<A href="[^"]*&meigaraId=([a-zA-Z0-9\/]*)[^"]*">[^<]*<\/A>\s*<BR>\s*受付時間:<BR>\s*([^<]*)<BR>\s*注文パターン:([^<]+)<BR>\s*([^<]+)<BR>\s*注文番号:(\d+)<BR>\s*注文価格:([^<]+)<BR>\s*約定価格:([^<]*)<BR>\s*数量\(未約定\):<BR>\s*(\d+)\(\d+\)単位<BR>\s*発注状況:([^<]*)<BR>/)
         tmp = {}
@@ -493,7 +492,9 @@ module SBIClient
             SBIClient::FX::ORDER_TYPE_OCO
           when "OCO2"
             SBIClient::FX::ORDER_TYPE_OCO
-          when "IFD"
+          when "IFD1"
+            SBIClient::FX::ORDER_TYPE_IFD
+          when "IFD2"
             SBIClient::FX::ORDER_TYPE_IFD
           when "IFD-OCO"
             SBIClient::FX::ORDER_TYPE_IFD_OCO

@@ -3,88 +3,7 @@ $: << "../lib"
 require 'sbiclient'
 require 'common'
 
-describe "指値/逆指値注文" do
-  it_should_behave_like "login"   
-  
-  it "指値-買い" do
-    @order_id = @s.order( SBIClient::FX::EURJPY, SBIClient::FX::BUY, 1, {
-      :rate=>@rates[SBIClient::FX::EURJPY].ask_rate - 0.5,
-      :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
-      :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY
-    })
-    @order = @s.list_orders[@order_id.order_no]
-    @order_id.should_not be_nil
-    @order_id.order_no.should_not be_nil
-    @order.should_not be_nil
-    @order.order_no.should == @order_id.order_no
-    @order.trade_type.should == SBIClient::FX::TRADE_TYPE_NEW
-    @order.execution_expression.should == SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER
-    @order.sell_or_buy.should == SBIClient::FX::BUY
-    @order.pair.should == SBIClient::FX::EURJPY
-    @order.count.should == 1
-    @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate - 0.5
-  end
-
-  it "指値-売り" do
-    @order_id = @s.order( SBIClient::FX::USDJPY, SBIClient::FX::SELL, 1, {
-      :rate=>@rates[SBIClient::FX::USDJPY].ask_rate + 0.5,
-      :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
-      :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_WEEK_END
-    })
-    @order = @s.list_orders[@order_id.order_no]
-    @order_id.should_not be_nil
-    @order_id.order_no.should_not be_nil
-    @order.should_not be_nil
-    @order.order_no.should == @order_id.order_no
-    @order.trade_type.should == SBIClient::FX::TRADE_TYPE_NEW
-    @order.execution_expression.should == SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER
-    @order.sell_or_buy.should == SBIClient::FX::SELL
-    @order.pair.should == SBIClient::FX::USDJPY
-    @order.count.should == 1
-    @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate + 0.5
-  end
-
-  it "逆指値-買い" do
-    @order_id = @s.order( SBIClient::FX::EURUSD, SBIClient::FX::BUY, 1, {
-     :rate=>@rates[SBIClient::FX::EURUSD].ask_rate + 0.05,
-     :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER,
-     :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY
-    })
-    @order_id.should_not be_nil
-    @order_id.order_no.should_not be_nil
-    @order = @s.list_orders[@order_id.order_no]
-    @order.should_not be_nil
-    @order.order_no.should == @order_id.order_no
-    @order.trade_type.should == SBIClient::FX::TRADE_TYPE_NEW
-    @order.execution_expression.should == SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER
-    @order.sell_or_buy.should == SBIClient::FX::BUY
-    @order.pair.should == SBIClient::FX::EURUSD
-    @order.count.should == 1
-    @order.rate.should.to_s == (@rates[SBIClient::FX::EURUSD].ask_rate + 0.05).to_s
-  end
-    
-  it "逆指値-売り" do
-    @order_id = @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 2, {
-      :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
-      :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER,
-      :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_SPECIFIED,  # 有効期限: 指定
-      :expiration_date=>Date.today+2 # 2日後
-    })
-    @order = @s.list_orders[@order_id.order_no]
-    @order_id.should_not be_nil
-    @order_id.order_no.should_not be_nil
-    @order.should_not be_nil
-    @order.order_no.should == @order_id.order_no
-    @order.trade_type.should == SBIClient::FX::TRADE_TYPE_NEW
-    @order.execution_expression.should == SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER
-    @order.sell_or_buy.should == SBIClient::FX::SELL
-    @order.pair.should == SBIClient::FX::MURJPY
-    @order.count.should == 2
-    @order.rate.should == @rates[SBIClient::FX::MURJPY].ask_rate - 0.5
-  end
-end
-
-describe "OCO注文" do
+describe "OCO" do
   it_should_behave_like "login"   
 
   it "OCO-買x買-指値" do
@@ -108,6 +27,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate - 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -118,6 +38,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate + 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
   it "OCO-売x売-指値" do
@@ -141,6 +62,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate + 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -151,6 +73,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate - 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
   it "OCO-買x売-指値" do
@@ -174,6 +97,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate - 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -184,6 +108,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate + 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
   it "OCO-売x買-指値" do
@@ -208,6 +133,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate + 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -218,6 +144,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate - 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
   it "OCO-買x買-逆指値" do
@@ -241,6 +168,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate + 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -251,6 +179,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate - 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
   it "OCO-売x売-逆指値" do
@@ -274,6 +203,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate - 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -284,6 +214,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate + 0.5
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
   it "OCO-買x売-逆指値" do
@@ -307,6 +238,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate + 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -317,6 +249,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate - 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
   it "OCO-売りx買い" do
@@ -341,6 +274,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate - 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
     @order.should_not be_nil
@@ -351,6 +285,7 @@ describe "OCO注文" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate + 1
+    @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
 end
