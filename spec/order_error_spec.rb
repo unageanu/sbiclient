@@ -97,20 +97,20 @@ describe "注文の異常系テスト" do
   it "OCO" do
     # 執行条件の指定がない
     proc {
-      @s.order( SBIClient::FX::EURJPY, SBIClient::FX::SELL, 1, {
-        :rate=>@rates[SBIClient::FX::EURJPY].ask_rate - 0.5, 
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
         :second_order_sell_or_buy=>SBIClient::FX::BUY,
-        :second_order_rate=>@rates[SBIClient::FX::EURJPY].ask_rate + 0.5,
+        :second_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5,
         :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY
       })
     }.should raise_error( RuntimeError, "options[:execution_expression] is required." )
     
     # 有効期限の指定がない
     proc {
-      @s.order( SBIClient::FX::EURJPY, SBIClient::FX::SELL, 1, {
-        :rate=>@rates[SBIClient::FX::EURJPY].ask_rate + 0.5, 
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
         :second_order_sell_or_buy=>SBIClient::FX::BUY,
-        :second_order_rate=>@rates[SBIClient::FX::EURJPY].ask_rate - 0.5,
+        :second_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
         :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
       })
     }.should raise_error( RuntimeError, "options[:expiration_type] is required." )
@@ -120,7 +120,7 @@ describe "注文の異常系テスト" do
       @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
           :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
           :second_order_sell_or_buy=>SBIClient::FX::BUY,
-          :second_order_rate=>@rates[SBIClient::FX::EURJPY].ask_rate - 0.5,
+          :second_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
           :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
           :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY
         })
@@ -130,7 +130,7 @@ describe "注文の異常系テスト" do
       @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
           :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5,
           :second_order_sell_or_buy=>SBIClient::FX::BUY,
-          :second_order_rate=>@rates[SBIClient::FX::EURJPY].ask_rate + 0.5,
+          :second_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5,
           :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER,
           :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY
         })
@@ -140,8 +140,8 @@ describe "注文の異常系テスト" do
   it "IFD" do
     # 執行条件の指定がない
     proc {
-      @s.order( SBIClient::FX::EURJPY, SBIClient::FX::SELL, 1, {
-        :rate=>@rates[SBIClient::FX::EURJPY].ask_rate - 0.5, 
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
         :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
         :settle => {
           :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
@@ -152,8 +152,8 @@ describe "注文の異常系テスト" do
     
     # 有効期限の指定がない
     proc {
-      @s.order( SBIClient::FX::EURJPY, SBIClient::FX::SELL, 1, {
-        :rate=>@rates[SBIClient::FX::EURJPY].ask_rate + 0.5, 
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
         :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
         :settle => {
           :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
@@ -162,10 +162,22 @@ describe "注文の異常系テスト" do
       })
     }.should raise_error( RuntimeError, "options[:expiration_type] is required." )
     
+    # レートの指定がない
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
+        :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+        :settle => {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
+          :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER
+        }
+      })
+    }.should raise_error( RuntimeError, "options[:rate] is required." )
+    
     # 決済取引のレートの指定がない
     proc {
-      @s.order( SBIClient::FX::EURJPY, SBIClient::FX::SELL, 1, {
-        :rate=>@rates[SBIClient::FX::EURJPY].ask_rate + 0.5, 
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
         :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
         :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
         :settle => {
@@ -176,8 +188,8 @@ describe "注文の異常系テスト" do
    
     # 決済取引の取引種別の指定がない
     proc {
-      @s.order( SBIClient::FX::EURJPY, SBIClient::FX::SELL, 1, {
-        :rate=>@rates[SBIClient::FX::EURJPY].ask_rate + 0.5, 
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
         :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
         :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
         :settle => {
@@ -236,4 +248,105 @@ describe "注文の異常系テスト" do
         })
     }.should raise_error( RuntimeError )
   end
+  
+  it "IFDOCO" do
+    # 執行条件の指定がない
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
+        :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+        :settle => {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
+          :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 1
+        }
+      })
+    }.should raise_error( RuntimeError, "options[:execution_expression] is required." )
+    
+    # 有効期限の指定がない
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
+        :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
+        :settle => {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
+          :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 1
+        }
+      })
+    }.should raise_error( RuntimeError, "options[:expiration_type] is required." )
+    
+    # レートの指定がない
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
+        :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+        :settle => {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
+          :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 1
+        }
+      })
+    }.should raise_error( RuntimeError, "options[:rate] is required." )
+    
+    # 決済取引のレートの指定がない
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+        :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5, 
+        :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
+        :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+        :settle => {
+         :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 1
+        }
+      })
+    }.should raise_error( RuntimeError, "options[:settle][:rate] is required." )
+   
+    # 不利な注文
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
+          :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+          :settle => {
+            :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
+            :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 1
+          }
+        }) 
+    }.should raise_error( RuntimeError )
+    
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5,
+          :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+          :settle => {
+            :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
+            :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 1
+          }
+        })
+    }.should raise_error( RuntimeError )
+    
+    # 決済注文レートが不正
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5,
+          :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+          :settle => {
+            :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.8,
+            :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 1
+          }
+        })
+    }.should raise_error( RuntimeError )
+    
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5,
+          :execution_expression=>SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY,
+          :settle => {
+            :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 1,
+            :stop_order_rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5
+          }
+        })
+    }.should raise_error( RuntimeError )
+  end
+  
 end

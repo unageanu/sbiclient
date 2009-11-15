@@ -397,14 +397,17 @@ module SBIClient
             set_expiration( form,  options ) # 有効期限
           when ORDER_TYPE_IFD_OCO
             form.order = "4"
+            result = @client.submit(form, form.buttons.find {|b| b.value=="選択" }) 
+            form = result.forms.first
             set_expression( form, options[:execution_expression] ) 
             set_rate(form, options[:rate], "3")
-            set_expression( form, options[:settle][:execution_expression], "sikkouJyouken2" ) 
             set_rate(form, options[:settle][:rate], "1")
             set_rate(form, options[:settle][:stop_order_rate], "2")
             set_expiration( form,  options ) # 有効期限
           when ORDER_TYPE_TRAIL
             form.order = "6"
+            result = @client.submit(form, form.buttons.find {|b| b.value=="選択" }) 
+            form = result.forms.first
             set_rate(form, options[:rate], "1")
             set_trail(form, options[:trail_range])
             set_expiration( form,  options ) # 有効期限
@@ -496,7 +499,9 @@ module SBIClient
             SBIClient::FX::ORDER_TYPE_IFD
           when "IFD2"
             SBIClient::FX::ORDER_TYPE_IFD
-          when "IFD-OCO"
+          when "IFDOCO1"
+            SBIClient::FX::ORDER_TYPE_IFD_OCO
+          when "IFDOCO2"
             SBIClient::FX::ORDER_TYPE_IFD_OCO
           else
             raise "illegal order_type. order_type=#{order_type}"
