@@ -244,8 +244,7 @@ module SBIClient
         result =  link_click( "4" ) 
         
         # TODO 2ページ目以降を参照してない・・・
-        #puts result.body.toutf8
-        list = result.body.toutf8.scan( /<A href="[^"]*&meigaraId=([a-zA-Z0-9\/]*)[^"]*">[^<]*<\/A>\s*<BR>\s*受付時間:<BR>\s*([^<]*)<BR>\s*注文パターン:([^<]+)<BR>\s*([^<]+)<BR>\s*注文番号:(\d+)<BR>\s*注文価格:([^<]+)<BR>\s*約定価格:([^<]*)<BR>\s*数量\(未約定\):<BR>\s*(\d+)\(\d+\)単位<BR>\s*発注状況:([^<]*)<BR>/)
+        list = result.body.toutf8.scan( /<A href="[^"]*&meigaraId=([a-zA-Z0-9\/]*)[^"]*">[^<]*<\/A>\s*<BR>\s*受付時間:<BR>\s*([^<]*)<BR>\s*注文パターン:([^<]+)<BR>\s*([^<]+)<BR>\s*注文番号:(\d+)<BR>\s*注文価格:([^<]+)<BR>(?:\s*トレール幅:([^<]*)<BR>)?\s*約定価格:([^<]*)<BR>\s*数量\(未約定\):<BR>\s*(\d+)\(\d+\)単位<BR>\s*発注状況:([^<]*)<BR>/)
         tmp = {}
         list.each {|i|
           pair = to_pair( i[0] )
@@ -261,10 +260,11 @@ module SBIClient
           end
           order_no = i[4] 
           rate =  i[5].to_f
-          count =  i[7].to_i
+          trail_range =  i[6].to_f if i[6]
+          count =  i[8].to_i
           
           tmp[order_no] = Order.new( order_no, trade_type, order_type, 
-              execution_expression, sell_or_buy, pair, count, rate, i[8])
+              execution_expression, sell_or_buy, pair, count, rate, trail_range, i[9])
         }
         return tmp
       end
@@ -420,7 +420,7 @@ module SBIClient
         # 確認画面へ
         result = @client.submit( form, form.buttons.find {|b| b.value=="注文確認" } ) 
         SBIClient::Client.error( result ) unless result.body.toutf8 =~ /注文確認/
-
+        
         result = @client.submit(result.forms.first)
         SBIClient::Client.error( result ) unless result.body.toutf8 =~ /注文番号\:[^\d]+(\d+)/
         return OrderResult.new( $1 )
@@ -503,6 +503,8 @@ module SBIClient
             SBIClient::FX::ORDER_TYPE_IFD_OCO
           when "IFDOCO2"
             SBIClient::FX::ORDER_TYPE_IFD_OCO
+          when "トレール"
+            SBIClient::FX::ORDER_TYPE_TRAIL
           else
             raise "illegal order_type. order_type=#{order_type}"
         end
@@ -604,7 +606,8 @@ module SBIClient
     #===注文結果
     OrderResult = Struct.new(:order_no )
     #===注文
-    Order = Struct.new(:order_no, :trade_type, :order_type, :execution_expression, :sell_or_buy, :pair,  :count, :rate, :order_state )
+    Order = Struct.new(:order_no, :trade_type, :order_type, :execution_expression, \
+        :sell_or_buy, :pair,  :count, :rate, :trail_range, :order_state )
   end
 end
 

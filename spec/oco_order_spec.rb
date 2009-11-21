@@ -27,6 +27,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate - 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -38,6 +39,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate + 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
@@ -62,6 +64,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate + 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -73,6 +76,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate - 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
@@ -97,6 +101,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate - 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -108,6 +113,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate + 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
@@ -133,6 +139,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate + 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -144,6 +151,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate - 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
@@ -168,6 +176,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate + 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -179,6 +188,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate - 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
@@ -203,6 +213,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate - 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -214,6 +225,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::GBPJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::GBPJPY].ask_rate + 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
@@ -238,6 +250,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate + 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -249,6 +262,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::USDJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::USDJPY].ask_rate - 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   
@@ -274,6 +288,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate - 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
     
     @order = orders[(@order_id.order_no.to_i+1).to_s]
@@ -285,6 +300,7 @@ describe "OCO" do
     @order.pair.should == SBIClient::FX::MZDJPY
     @order.count.should == 2
     @order.rate.should == @rates[SBIClient::FX::MZDJPY].ask_rate + 1
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_OCO
   end
   

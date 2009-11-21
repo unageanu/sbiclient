@@ -28,6 +28,7 @@ describe "IFDOCO" do
     @order.pair.should == SBIClient::FX::EURJPY
     @order.count.should == 1
     @order.rate.should == @rates[SBIClient::FX::EURJPY].ask_rate - 0.5
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_IFD_OCO
   end
 
@@ -51,7 +52,8 @@ describe "IFDOCO" do
     @order.sell_or_buy.should == SBIClient::FX::BUY
     @order.pair.should == SBIClient::FX::EURUSD
     @order.count.should == 1
-    @order.rate.should.to_s == (@rates[SBIClient::FX::EURUSD].ask_rate + 0.05).to_s
+    @order.rate.to_s.should == (@rates[SBIClient::FX::EURUSD].ask_rate + 0.05).to_s
+    @order.trail_range.should be_nil
     @order.order_type= SBIClient::FX::ORDER_TYPE_IFD_OCO
   end
 end

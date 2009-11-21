@@ -350,3 +350,56 @@ describe "注文の異常系テスト" do
   end
   
 end
+
+
+describe "trail" do
+  it_should_behave_like "login"
+  
+  it "指値/逆指値" do
+    
+    # 有効期限の指定がない
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
+          :trail_range=>0.5
+        })
+    }.should raise_error( RuntimeError, "options[:expiration_type] is required." )
+    
+    # 日付指定であるのに日時の指定がない
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
+          :trail_range=>0.5,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_SPECIFIED
+        })
+    }.should raise_error( RuntimeError, "options[:expiration_date] is required." )
+
+    # 日付指定の範囲が不正
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate - 0.5,
+          :trail_range=>0.5,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_SPECIFIED,
+          :expiration_date=>Date.today
+        })
+    }.should raise_error( RuntimeError )
+
+    # レートが不正
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>"-10000000",
+          :trail_range=>0.5,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY
+        })
+    }.should raise_error( RuntimeError )
+
+    # 不利な注文
+    proc {
+      @s.order( SBIClient::FX::MURJPY, SBIClient::FX::SELL, 1, {
+          :rate=>@rates[SBIClient::FX::MURJPY].ask_rate + 0.5,
+          :trail_range=>0.5,
+          :expiration_type=>SBIClient::FX::EXPIRATION_TYPE_TODAY
+        })
+    }.should raise_error( RuntimeError )
+  end
+end
