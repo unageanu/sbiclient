@@ -241,30 +241,30 @@ module SBIClient
       #戻り値:: 注文番号をキーとするClickClientScrap::FX::Orderのハッシュ。
       #
       def list_orders(  )
-        result =  link_click( "4" ) 
-        
-        # TODO 2ページ目以降を参照してない・・・
-        list = result.body.toutf8.scan( /<A href="[^"]*&meigaraId=([a-zA-Z0-9\/]*)[^"]*">[^<]*<\/A>\s*<BR>\s*受付時間:<BR>\s*([^<]*)<BR>\s*注文パターン:([^<]+)<BR>\s*([^<]+)<BR>\s*注文番号:(\d+)<BR>\s*注文価格:([^<]+)<BR>(?:\s*トレール幅:([^<]*)<BR>)?\s*約定価格:([^<]*)<BR>\s*数量\(未約定\):<BR>\s*(\d+)\(\d+\)単位<BR>\s*発注状況:([^<]*)<BR>/)
         tmp = {}
-        list.each {|i|
-          pair = to_pair( i[0] )
-          order_type = to_order_type_code(i[2])
-          trade_type = i[3] =~ /^新規.*/ ? SBIClient::FX::TRADE_TYPE_NEW : SBIClient::FX::TRADE_TYPE_SETTLEMENT
-          sell_or_buy = i[3] =~ /.*売\/.*/ ?  SBIClient::FX::SELL : SBIClient::FX::BUY 
-          execution_expression = if i[3] =~ /.*\/指値/
-            SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER
-          elsif i[3] =~ /.*\/逆指値/
-            SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER
-          else
-            SBIClient::FX::EXECUTION_EXPRESSION_MARKET_ORDER
-          end
-          order_no = i[4] 
-          rate =  i[5].to_f
-          trail_range =  i[6].to_f if i[6]
-          count =  i[8].to_i
-          
-          tmp[order_no] = Order.new( order_no, trade_type, order_type, 
-              execution_expression, sell_or_buy, pair, count, rate, trail_range, i[9])
+        each_order_page {|result|
+          list = result.body.toutf8.scan( /<A href="[^"]*&meigaraId=([a-zA-Z0-9\/]*)[^"]*">[^<]*<\/A>\s*<BR>\s*受付時間:<BR>\s*([^<]*)<BR>\s*注文パターン:([^<]+)<BR>\s*([^<]+)<BR>\s*注文番号:(\d+)<BR>\s*注文価格:([^<]+)<BR>(?:\s*トレール幅:([^<]*)<BR>)?\s*約定価格:([^<]*)<BR>\s*数量\(未約定\):<BR>\s*(\d+)\(\d+\)単位<BR>\s*発注状況:([^<]*)<BR>/)
+          list.each {|i|
+            pair = to_pair( i[0] )
+            order_type = to_order_type_code(i[2])
+            trade_type = i[3] =~ /^新規.*/ ? SBIClient::FX::TRADE_TYPE_NEW : SBIClient::FX::TRADE_TYPE_SETTLEMENT
+            sell_or_buy = i[3] =~ /.*売\/.*/ ?  SBIClient::FX::SELL : SBIClient::FX::BUY 
+            execution_expression = if i[3] =~ /.*\/指値/
+              SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER
+            elsif i[3] =~ /.*\/逆指値/
+              SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER
+            else
+              SBIClient::FX::EXECUTION_EXPRESSION_MARKET_ORDER
+            end
+            order_no = i[4] 
+            rate =  i[5].to_f
+            trail_range =  i[6].to_f if i[6]
+            count =  i[8].to_i
+            
+            tmp[order_no] = Order.new( order_no, trade_type, order_type, 
+                execution_expression, sell_or_buy, pair, count, rate, trail_range, i[9])
+          }
+          false
         }
         return tmp
       end
@@ -437,12 +437,14 @@ module SBIClient
         raise "order_no is nil." unless order_no
         
         # 注文一覧
-        result =  link_click( "4" )
-        SBIClient::Client.error( result ) if result.links.empty?
-        
-        # 対象となる注文をクリック 
-        link =  result.links.find {|l|
-            l.href =~ /[^"]*Id=([\d]+)[^"]*/ && $1 == order_no
+        link = nil
+        each_order_page {|result|
+          SBIClient::Client.error( result ) if result.links.empty?
+          # 対象となる注文をクリック 
+          link =  result.links.find {|l|
+              l.href =~ /[^"]*Id=([\d]+)[^"]*/ && $1 == order_no
+          }
+          link != nil
         }
         raise "illegal order_no. order_no=#{order_no}" unless link
         result =  @client.click(link)
@@ -459,6 +461,7 @@ module SBIClient
         form.ToriPs = @order_password
         result = @client.submit(form, form.buttons.find {|b| b.value=="注文取消" })
         SBIClient::Client.error( result ) unless result.body.toutf8 =~ /取消を受付致しました/
+        
       end
       
       #===ログアウトします。
@@ -467,6 +470,17 @@ module SBIClient
       end
       
     private
+      # 注文一覧ページをブロックがtrueを返すまで列挙します。
+      def each_order_page 
+        result =  link_click( "4" ) 
+        pages = result.links.find_all {|l| l.text =~ /\d+/}
+        return if yield result
+        pages.each {|link|
+          result = @client.click( link )
+          break if yield result
+        }
+      end
+    
       # フォームに執行条件を設定します。
       def set_expression( form, exp, key="sikkouJyouken" ) #:nodoc:
         form[key] = exp  == SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER ? "2" : "1" #指値/逆指値
