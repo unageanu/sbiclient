@@ -427,6 +427,48 @@ module SBIClient
       end
       
       #
+      #=== 決済注文を行います。
+      #
+      #*open_interest_id*:: 決済する建玉番号
+      #*unit*:: 取引数量
+      #*options*:: 決済注文のオプション。注文方法に応じて以下の情報を設定できます。
+      #            - <b>成り行き注文</b>
+      #              - <tt>:slippage</tt> .. スリッページ (オプション)
+      #              - <tt>:slippage_base_rate</tt> .. スリッページの基準となる取引レート(スリッページが指定された場合、必須。)
+      #            - <b>通常注文</b>  <b>※未実装</b> ※注文レートが設定されていれば通常取引となります。
+      #              - <tt>:rate</tt> .. 注文レート(必須)
+      #              - <tt>:execution_expression</tt> .. 執行条件。SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER等を指定します(必須)
+      #              - <tt>:expiration_type</tt> .. 有効期限。SBIClient::FX::EXPIRATION_TYPE_TODAY等を指定します(必須)
+      #              - <tt>:expiration_date</tt> .. 有効期限が「日付指定(SBIClient::FX::EXPIRATION_TYPE_SPECIFIED)」の場合の有効期限をDateで指定します。(有効期限が「日付指定」の場合、必須)
+      #            - <b>OCO注文</b>  <b>※未実装</b> ※注文レートと逆指値レートが設定されていればOCO取引となります。
+      #              - <tt>:rate</tt> .. 注文レート(必須)
+      #              - <tt>:stop_order_rate</tt> .. 逆指値レート(必須)
+      #              - <tt>:expiration_type</tt> .. 有効期限。SBIClient::FX::EXPIRATION_TYPE_TODAY等を指定します(必須)
+      #              - <tt>:expiration_date</tt> .. 有効期限が「日付指定(SBIClient::FX::EXPIRATION_TYPE_SPECIFIED)」の場合の有効期限をDateで指定します。(有効期限が「日付指定」の場合、必須)
+      #<b>戻り値</b>:: なし
+      #
+      def settle ( open_interest_id, unit, options={} )
+        if ( options[:rate] != nil && options[:stop_order_rate] != nil )
+          # レートと逆指値レートが指定されていればOCO取引
+          raise "options[:expiration_type] is required." if options[:expiration_type] == nil
+        elsif ( options[:rate] != nil )
+          # レートが指定されていれば通常取引
+          raise "options[:execution_expression] is required." if options[:execution_expression] == nil
+          raise "options[:expiration_type] is required." if options[:expiration_type] == nil
+        else
+          # 成り行き
+          if ( options[:slippage] != nil )
+            raise "if you use a slippage,  options[:slippage_base_rate] is required." if options[:slippage_base_rate] == nil
+          end
+        end
+        
+        result =  link_click( "6" )
+        result =  link_click( "2", result.links )
+        
+        # TODO
+      end
+      
+      #
       #=== 注文をキャンセルします。
       #
       #order_no:: 注文番号
@@ -464,6 +506,42 @@ module SBIClient
         
       end
       
+      #
+      #=== 建玉一覧を取得します。
+      #
+      #戻り値:: 建玉IDをキーとするSBIClient::FX::Positionのハッシュ。
+      #
+      def  list_positions
+        result =  link_click( "6" )
+        result =  link_click( "2", result.links )
+        
+        tmp = {}
+        each_page( result ) {|res|
+          links = res.links.find_all {|l|
+            l.href =~ /[^"]syoukai\/syoukaiTatigyoku.aspx\?[^"]*/ 
+          }
+          links.each {|link|
+            re = @client.click( link )
+            each_page( re ) {|r|
+              positions = r.body.toutf8.scan(/\<A HREF="[^"]*&urikai=([^"&]*)&[^"]*meigaraId=([^"&]*)&[^"]*tId=([^"&]*)[^"]*">\s*([\/\s\:\d]*)<\/A>\s*<BR>\s*数量[^>]*>\s*(\d+)\((\d*)\)[^\:]*\:\s*([\d\.]+)<BR>[^>]*>[^>]*>([\d\+\-\.]+)</)
+              positions.each {|i|
+                sell_or_buy = i[0] == "1" ?  SBIClient::FX::SELL : SBIClient::FX::BUY
+                pair = to_pair( i[1] )
+                position_id = "#{i[0]}_#{pair}_#{i[2]}"
+                date =  DateTime.parse(i[3], "%Y/%m/%d %H:%M:%S")
+                count =  i[4].to_i
+                rate =  i[6].to_f
+                profit_or_loss =  i[7].to_i
+                tmp[position_id] = Position.new(position_id, pair, sell_or_buy, count, rate, profit_or_loss, date  )
+              }
+              false
+            }
+          }
+          false
+        }
+        return tmp
+      end
+      
       #===ログアウトします。
       def logout
         link_click( "*" )
@@ -471,8 +549,12 @@ module SBIClient
       
     private
       # 注文一覧ページをブロックがtrueを返すまで列挙します。
-      def each_order_page 
-        result =  link_click( "4" ) 
+      def each_order_page( &block )
+        each_page( link_click( "4" ), &block) 
+      end
+      # 複数ページからなる一覧の各ページを、ブロックがtrueを返すまで列挙します。
+      #result:: ページの1つ
+      def each_page( result )  
         pages = result.links.find_all {|l| l.text =~ /\d+/}
         return if yield result
         pages.each {|link|
@@ -480,7 +562,7 @@ module SBIClient
           break if yield result
         }
       end
-    
+      
       # フォームに執行条件を設定します。
       def set_expression( form, exp, key="sikkouJyouken" ) #:nodoc:
         form[key] = exp  == SBIClient::FX::EXECUTION_EXPRESSION_REVERSE_LIMIT_ORDER ? "2" : "1" #指値/逆指値
@@ -601,8 +683,8 @@ module SBIClient
         str.gsub( /\//, "" ).to_sym
       end
      
-      def link_click( no )
-        link = @links.find {|i|
+      def link_click( no, links=@links )
+        link = links.find {|i|
             i.attributes["accesskey"] == no
         }
         raise "link isnot found. accesskey=#{no}"  unless link
@@ -622,6 +704,8 @@ module SBIClient
     #===注文
     Order = Struct.new(:order_no, :trade_type, :order_type, :execution_expression, \
         :sell_or_buy, :pair,  :count, :rate, :trail_range, :order_state )
+    #===建玉
+    Position = Struct.new(:position_id, :pair, :sell_or_buy, :count, :rate, :profit_or_loss, :date  )
   end
 end
 
