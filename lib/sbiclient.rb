@@ -427,45 +427,59 @@ module SBIClient
       end
       
       #
-      #=== 決済注文を行います。
+      #=== 成り行きで決済注文を行います。
       #
-      #*open_interest_id*:: 決済する建玉番号
-      #*unit*:: 取引数量
-      #*options*:: 決済注文のオプション。注文方法に応じて以下の情報を設定できます。
-      #            - <b>成り行き注文</b>
-      #              - <tt>:slippage</tt> .. スリッページ (オプション)
-      #              - <tt>:slippage_base_rate</tt> .. スリッページの基準となる取引レート(スリッページが指定された場合、必須。)
-      #            - <b>通常注文</b>  <b>※未実装</b> ※注文レートが設定されていれば通常取引となります。
-      #              - <tt>:rate</tt> .. 注文レート(必須)
-      #              - <tt>:execution_expression</tt> .. 執行条件。SBIClient::FX::EXECUTION_EXPRESSION_LIMIT_ORDER等を指定します(必須)
-      #              - <tt>:expiration_type</tt> .. 有効期限。SBIClient::FX::EXPIRATION_TYPE_TODAY等を指定します(必須)
-      #              - <tt>:expiration_date</tt> .. 有効期限が「日付指定(SBIClient::FX::EXPIRATION_TYPE_SPECIFIED)」の場合の有効期限をDateで指定します。(有効期限が「日付指定」の場合、必須)
-      #            - <b>OCO注文</b>  <b>※未実装</b> ※注文レートと逆指値レートが設定されていればOCO取引となります。
-      #              - <tt>:rate</tt> .. 注文レート(必須)
-      #              - <tt>:stop_order_rate</tt> .. 逆指値レート(必須)
-      #              - <tt>:expiration_type</tt> .. 有効期限。SBIClient::FX::EXPIRATION_TYPE_TODAY等を指定します(必須)
-      #              - <tt>:expiration_date</tt> .. 有効期限が「日付指定(SBIClient::FX::EXPIRATION_TYPE_SPECIFIED)」の場合の有効期限をDateで指定します。(有効期限が「日付指定」の場合、必須)
+      #open_interest_id:: 決済する建玉番号
       #<b>戻り値</b>:: なし
-      #
-      def settle ( open_interest_id, unit, options={} )
-        if ( options[:rate] != nil && options[:stop_order_rate] != nil )
-          # レートと逆指値レートが指定されていればOCO取引
-          raise "options[:expiration_type] is required." if options[:expiration_type] == nil
-        elsif ( options[:rate] != nil )
-          # レートが指定されていれば通常取引
-          raise "options[:execution_expression] is required." if options[:execution_expression] == nil
-          raise "options[:expiration_type] is required." if options[:expiration_type] == nil
-        else
-          # 成り行き
-          if ( options[:slippage] != nil )
-            raise "if you use a slippage,  options[:slippage_base_rate] is required." if options[:slippage_base_rate] == nil
-          end
-        end
+      def settle ( position_id )
         
         result =  link_click( "6" )
         result =  link_click( "2", result.links )
         
-        # TODO
+        #IDを解析
+        raise "illegal position_id. position_id=#{position_id}" unless position_id=~ /^(1|\-1)_([A-Z]{3})([A-Z]{3})_(\d*)$/
+        sell_or_buy = $1
+        pair = "#{$2}/#{$3}"
+        id  = $4
+        
+        # 建玉一覧
+        form = result.forms.find{|f|  
+          f.name == "orderForm"
+        }
+        SBIClient::Client.error( result ) unless form
+        form.meigaraId = pair
+        result = @client.submit(form)
+        link = result.links.find {|l|
+          l.href =~ /syoukaiTatigyoku.aspx\?.*&urikai=#{sell_or_buy}/
+        }
+        raise "position not found. position_id=#{position_id}" unless link
+        result =  @client.click(link)
+        
+        # ポジション一覧
+        link = nil
+        each_page( result ) {|r|
+          link = r.links.find {|l|
+            l.href =~ /syoukaiTatigyoku.aspx\?.*&tId=#{id}/
+          }
+          link != nil
+        }
+        raise "position not found. position_id=#{position_id}" unless link
+        result =  @client.click(link)
+        form = result.forms.find{|f|  
+          f.name == "kessaiForm"
+        }
+        result = @client.submit(form, form.buttons.first)
+        SBIClient::Client.error( result ) if result.forms.empty?
+        form = result.forms.first
+        form.sikkouJyouken = "0"
+        form["postTorihikiPs"] = @order_password
+                
+        # 確認画面へ
+        result = @client.submit( form, form.buttons.find {|b| b.value=="注文確認" } ) 
+        SBIClient::Client.error( result ) unless result.body.toutf8 =~ /注文確認/
+        
+        result = @client.submit(result.forms[1], form.buttons.first )
+        SBIClient::Client.error( result ) unless result.body.toutf8 =~ /注文受付/
       end
       
       #
@@ -523,7 +537,7 @@ module SBIClient
           links.each {|link|
             re = @client.click( link )
             each_page( re ) {|r|
-              positions = r.body.toutf8.scan(/\<A HREF="[^"]*&urikai=([^"&]*)&[^"]*meigaraId=([^"&]*)&[^"]*tId=([^"&]*)[^"]*">\s*([\/\s\:\d]*)<\/A>\s*<BR>\s*数量[^>]*>\s*(\d+)\((\d*)\)[^\:]*\:\s*([\d\.]+)<BR>[^>]*>[^>]*>([\d\+\-\.]+)</)
+              positions = r.body.toutf8.scan(/\<A HREF="[^"]*&urikai=([^"&]*)&[^"]*meigaraId=([^"&]*)&[^"]*tId=([^"&]*)[^"]*">\s*([\/\s\:\d]*)<\/A>\s*<BR>\s*数量[^>]*>\s*(\d+)\((\d*)\)[^\:]*\:\s*([\d\.]+)<BR>[^>]*>[^>]*>([\d\+\-\.\,]+)</)
               positions.each {|i|
                 sell_or_buy = i[0] == "1" ?  SBIClient::FX::SELL : SBIClient::FX::BUY
                 pair = to_pair( i[1] )
@@ -531,7 +545,7 @@ module SBIClient
                 date =  DateTime.parse(i[3], "%Y/%m/%d %H:%M:%S")
                 count =  i[4].to_i
                 rate =  i[6].to_f
-                profit_or_loss =  i[7].to_i
+                profit_or_loss =  i[7].gsub(/[\+\,]/, "").to_i
                 tmp[position_id] = Position.new(position_id, pair, sell_or_buy, count, rate, profit_or_loss, date  )
               }
               false
@@ -606,11 +620,6 @@ module SBIClient
         end
       end
     
-      # "USD/JPY"を:USDJPYのようなシンボルに変換します。
-      def to_pair( str ) #:nodoc:
-        str.gsub( /\//, "" ).to_sym
-      end
-    
       # 有効期限を設定します。
       def set_expiration( form,  options ) #:nodoc:
         date = nil
@@ -650,7 +659,7 @@ module SBIClient
         tokens = page.body.toutf8.scan( RATE_REGEX )
         tokens.each {|t|
           next unless t[0] =~ /\&meigaraId\=([A-Z\/]+)&/ 
-          pair = FxSession.to_pair( $1 )
+          pair = to_pair( $1 )
           swap = @swaps[pair]
           rate = FxSession.convert_rate t[2]
           if ( rate && swap )
@@ -671,15 +680,15 @@ module SBIClient
       def collect_swap( page, map )   #:nodoc:
         page.links.each {|i|
           next unless i.href =~ /\&meigaraId\=([A-Z\/]+)&/
-          pair = FxSession.to_pair( $1 )
+          pair = to_pair( $1 )
           res = @client.click( i )
           next unless res.body.toutf8 =~ /SW売\/買\(円\)\:<BR>\s*([\-\d]*)\/([\-\d]*)\s*</
           map[pair] = Swap.new( pair, $1.to_i, $2.to_i )
         }
       end
-    
+      
       # "USD/JPY"を:USDJPYのようなシンボルに変換します。
-      def self.to_pair( str )  #:nodoc:
+      def to_pair( str )  #:nodoc:
         str.gsub( /\//, "" ).to_sym
       end
      
