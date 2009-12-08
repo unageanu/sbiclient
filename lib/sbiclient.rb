@@ -429,9 +429,10 @@ module SBIClient
       #
       #=== 成り行きで決済注文を行います。
       #
-      #open_interest_id:: 決済する建玉番号
+      #position_id:: 決済する建玉番号
+      #count:: 取引数量
       #<b>戻り値</b>:: なし
-      def settle ( position_id )
+      def settle ( position_id, count )
         
         result =  link_click( "6" )
         result =  link_click( "2", result.links )
@@ -472,6 +473,7 @@ module SBIClient
         SBIClient::Client.error( result ) if result.forms.empty?
         form = result.forms.first
         form.sikkouJyouken = "0"
+        form.maisuu = count
         form["postTorihikiPs"] = @order_password
                 
         # 確認画面へ

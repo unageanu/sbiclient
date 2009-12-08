@@ -35,6 +35,13 @@ describe "market order" do
     }
     
     # 決済注文
-    #TODO
+    positions =  after.map{|i| i[1] }
+    positions.each {|p| 
+      @s.settle( p[0] ) if p[0] =~ /MURJPY/
+    }
+    sleep 1
+    after_settle =  @s.list_positions
+    assert_false after_settle.key?( positions[0] )
+    assert_false after_settle.key?( positions[1] )
   end
 end
