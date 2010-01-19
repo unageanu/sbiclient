@@ -6,6 +6,8 @@ require 'mechanize'
 require 'date'
 require 'kconv'
 require 'set'
+require 'fileutils'
+require 'uuidtools'
 
 #
 #=== SBI証券アクセスクライアント
@@ -668,6 +670,10 @@ module SBIClient
             map[pair]  = Rate.new( pair, rate[0], rate[1], swap.sell_swap, swap.buy_swap ) 
           end
         }
+        if tokens.length <= 0 
+          raise "session-time-out" if page.body.toutf8 =~ /ログアウト/
+          raise SBIClient::Client.error( page ) 
+        end
       end
       RATE_REGEX = /◇<A([^>]*)>([^<]*)<\/A>\s*<BR>\s*<CENTER>\s*<B>\s*([\d\-_\.]+)\s*<\/B>\s*<\/CENTER>/
       

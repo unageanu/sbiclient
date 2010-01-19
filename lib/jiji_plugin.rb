@@ -114,7 +114,19 @@ class SBISecuritiesPluginSession
       rescue
         # エラーになった場合はセッションを再作成する
         close
-        raise $!
+        
+        # セッションタイムアウトの場合1回だけリトライ
+        if $!.to_s == "session-time-out"
+          @logger.warn "session time out. retry..."
+          begin
+            session.send( name, *args )
+          rescue
+            close
+            raise $!
+          end
+        else
+          raise $!
+        end
       end
     }
   end
