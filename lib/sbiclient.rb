@@ -455,7 +455,7 @@ module SBIClient
         link = result.links.find {|l|
           l.href =~ /syoukaiTatigyoku.aspx\?.*&urikai=#{sell_or_buy}/
         }
-        raise "position not found. position_id=#{position_id}" unless link
+        raise "position not found. position_id=#{position_id} body=#{result.body}" unless link
         result =  @client.click(link)
         
         # ポジション一覧
@@ -466,7 +466,7 @@ module SBIClient
           }
           link != nil
         }
-        raise "position not found. position_id=#{position_id}" unless link
+        raise "position not found. position_id=#{position_id} body=#{result.body}" unless link
         result =  @client.click(link)
         form = result.forms.find{|f|  
           f.name == "kessaiForm"
