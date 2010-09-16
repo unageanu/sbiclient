@@ -1,9 +1,17 @@
 
-# ※「../etc」ディレクトリにuser,passファイルを作成し、
-#    ユーザー名,パスワードを設定しておくこと。
-USER=IO.read("../etc/user")
-PASS=IO.read("../etc/pass")
-ORDER_PASS=IO.read("../etc/order_pass") # 取引パスワード
+# ※「../etc/auth.yaml」を作成し、以下の内容を設定しておくこと。
+# <pre>
+# ---
+# user: <SBI証券のアクセスユーザー名>
+# pass: <SBI証券のアクセスユーザーパスワード>
+# order_pass: <SBI証券の取引パスワード>
+# </pre>
+require 'yaml'
+
+auth = YAML.load_file "#{File.dirname(__FILE__)}/../etc/auth.yaml"
+USER=auth["user"]
+PASS=auth["pass"]
+ORDER_PASS=auth["order_pass"]# 取引パスワード
 
 # ログインする
 shared_examples_for "login" do
