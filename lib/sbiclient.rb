@@ -47,7 +47,7 @@ module SBIClient
     # 例) https://proxyhost.com:80
     #
     def initialize( proxy=nil )
-      @client = WWW::Mechanize.new {|c|
+      @client = Mechanize.new {|c|
         # プロキシ
         if proxy 
           uri = URI.parse( proxy )
@@ -56,7 +56,7 @@ module SBIClient
       }
       @client.keep_alive = false
       @client.max_history=0
-      WWW::Mechanize::AGENT_ALIASES["KDDI-CA39"] = \
+      Mechanize::AGENT_ALIASES["KDDI-CA39"] = \
         'KDDI-CA39 UP.Browser/6.2.0.13.1.5 (GUI) MMP/2.0'
       @client.user_agent_alias = "KDDI-CA39"
       @host_name = DEFAULT_HOST_NAME
