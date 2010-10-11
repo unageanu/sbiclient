@@ -8,6 +8,12 @@ Spec::Rake::SpecTask.new do |t|
   t.spec_files = FileList['spec/*_spec.rb']
 end
 
+desc "run daily tests." 
+Spec::Rake::SpecTask.new(:spec_daily) do |t|
+  t.libs = ["./lib"]
+  t.spec_files = FileList['spec/jiji_plugin_daily_spec.rb']
+end
+
 desc "run all tests.(!! trade !!)" 
 Spec::Rake::SpecTask.new(:spec_all) do |t|
   t.libs = ["./lib"]
