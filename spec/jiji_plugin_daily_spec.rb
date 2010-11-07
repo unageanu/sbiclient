@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+# -*- coding: utf-8 -*- 
 
 $: << "../lib"
 
@@ -19,7 +19,7 @@ describe "jiji plugin daily" do
     @plugin = plugins.find {|i| i.plugin_id == :sbi_securities }
     @logger = Logger.new STDOUT
   } 
-  it "jiji pluginのテスト" do
+  it "jiji plugin test" do
     @plugin.should_not be_nil
     @plugin.display_name.should == "SBI Securities"
     

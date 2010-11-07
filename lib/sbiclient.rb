@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*- 
+
 begin
   require 'rubygems'
 rescue LoadError
@@ -72,6 +74,7 @@ module SBIClient
     #options:: オプション 
     #戻り値:: SBIClient::FX::FxSession
     def fx_session( userid, password, order_password, options={}, &block )
+      
       # ログイン
       page = @client.get(@host_name)
       SBIClient::Client.error(page)  if page.forms.length <= 0

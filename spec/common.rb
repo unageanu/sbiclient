@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 
 # ※「../etc/auth.yaml」を作成し、以下の内容を設定しておくこと。
 # <pre>
@@ -25,4 +26,8 @@ shared_examples_for "login" do
   }
   before { @order_id = nil }
   after { @s.cancel_order(@order_id.order_no) if @order_id }
+end
+
+def normalize_rate(rate)
+  ((rate * 100000).floor / 100000.0).to_s
 end

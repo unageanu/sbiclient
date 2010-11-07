@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 
 require 'rubygems'
 require 'jiji/plugin/securities_plugin'
@@ -37,11 +38,7 @@ class SBISecuritiesPlugin
   def list_pairs
     return ALL_PAIRS.map {|pair|
       count = 10000
-      if pair == SBIClient::FX::MSDJPY \
-          || pair == SBIClient::FX::MURJPY \
-          || pair == SBIClient::FX::MBPJPY \
-          || pair == SBIClient::FX::MUDJPY \
-          || pair == SBIClient::FX::MZDJPY
+      if pair == SBIClient::FX::MSDJPY  || pair == SBIClient::FX::MURJPY || pair == SBIClient::FX::MBPJPY  || pair == SBIClient::FX::MUDJPY || pair == SBIClient::FX::MZDJPY
           count = 1000 
       elsif pair == SBIClient::FX::ZARJPY 
           count = 100000

@@ -1,13 +1,14 @@
 Gem::Specification.new do |spec|
   spec.name = "sbiclient"
-  spec.version = "0.1.3"
+  spec.version = "0.1.4"
   spec.summary = "SBI securities client library for ruby."
   spec.author = "Masaya Yamauchi"
   spec.email = "y-masaya@red.hot.co.jp"
   spec.homepage = "http://github.com/unageanu/sbiclient/tree/master"
   spec.test_files =Dir.glob( "sample/*" ) + Dir.glob( "spec/*" )
   spec.files = [
-    "README"
+    "README",
+    "ChangeLog"
   ]+Dir.glob( "lib/*" )+spec.test_files
   spec.has_rdoc = true
   spec.rdoc_options << "--main" << "README"
