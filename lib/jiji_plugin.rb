@@ -116,6 +116,7 @@ class SBISecuritiesPluginSession
         if $!.to_s == "session-time-out"
           @logger.warn "session time out. retry..."
           begin
+            close
             session.send( name, *args )
           rescue
             close
